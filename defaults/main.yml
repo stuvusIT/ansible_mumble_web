@@ -1,0 +1,4 @@
+---
+mumble_web_build_base: /tmp
+mumble_web_deploy_path: /var/www/mumble-web
+mumble_web: {}

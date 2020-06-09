@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: Tim Neumann (tim.neumann@stuvus.uni-stuttgart.de)
+  description: Install and configure mumble-web
+  company: stuvus (https://stuvus.uni-stuttgart.de)
+
+  license: CC-BY-SA
+
+  min_ansible_version: 2.4
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - networking
+    - mumble
+    - murmur
+
+dependencies: []
