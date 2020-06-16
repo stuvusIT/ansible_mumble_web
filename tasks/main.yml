@@ -1,46 +1,28 @@
 ---
 - name: Calculate facts
   set_fact:
-    build_base: "{{ (mumble_web.build_base | default(mumble_web_build_base)) | regex_replace('\\/$', '') }}"
-    deploy_path: "{{ (mumble_web.deploy_path | default(mumble_web_deploy_path)) | regex_replace('\\/$', '') }}"
+    deploy_path: "{{ (mumble_web.deploy_path | default('/var/www/mumble-web')) | regex_replace('\\/$', '') }}"
     version: "{{ mumble_web.version }}"
     checksum: "{{ mumble_web.checksum }}"
     reinstall: "{{ mumble_web.reinstall | default(false)}}"
     config: "{{ mumble_web.config | default({}) }}"
 
-- name: Calculate facts for installation
-  set_fact:
-    archive_file: "{{ global_cache_dir }}/mumble-web-{{ version }}.tar.gz"
-    build_dir: "{{ build_base }}/mumble-web-{{ version }}"
-    deploy_base: "{{ deploy_path | dirname }}"
+    archive_file: "{{ global_cache_dir }}/mumble-web-{{ mumble_web.version }}.tar.gz"
+    build_dir: /opt/mumble-web-{{ mumble_web.version }}
 
-- name: Create deployment parent directory
-  file:
-    path: "{{ deploy_base }}"
-    state: directory
-
-- name: Calculate facts for checking if install is neccesarry
-  set_fact:
-    deployed_version_file: "{{ deploy_base }}/.{{ deploy_path | basename }}_ansible_deployed_version"
-
-- name: Make sure deployed version file exists
-  file:
-    path: "{{deployed_version_file}}"
-    state: touch
-
-- name: Read deployed version file
-  shell: "cat {{deployed_version_file}}"
-  register: deployed_version_output
-
-- name: Get deployed version
-  set_fact:
-    deployed_version: "{{deployed_version_output.stdout | trim }}"
+- name: Retrieve deployed symlink target
+  stat:
+    path: "{{ deploy_path }}"
+  register: _deployed_version_symlink_stat
 
 - name: Install
   include_tasks: install.yml
-  when: reinstall or (deployed_version != version)
+  when: reinstall or (version not in (_deployed_version_symlink_stat.stat.lnk_target | default("")))
 
 - name: Instantiate mumble-web config
   template:
     src: config.local.js.j2
     dest: "{{ deploy_path }}/config.local.js"
+    owner: www-data
+    group: www-data
+    mode: 0644

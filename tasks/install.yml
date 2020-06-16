@@ -6,7 +6,7 @@
 
 - name: Add NodeJS 14 PPA
   apt_repository:
-    repo: "deb https://deb.nodesource.com/node_14.x {{ ansible_distribution_release }} main"
+    repo: deb https://deb.nodesource.com/node_14.x {{ ansible_distribution_release }} main
     filename: nodesource
 
 - name: Install npm
@@ -17,10 +17,12 @@
 - name: Add build user
   user:
     name: build-user
+    system: true
+    comment: Build user to be able to build npm packages as unprivileged user
 
 - name: Download archive
   get_url:
-    url: "https://github.com/Johni0702/mumble-web/archive/{{ version }}.tar.gz"
+    url: https://github.com/Johni0702/mumble-web/archive/{{ version }}.tar.gz
     dest: "{{ archive_file }}"
     checksum: "{{ checksum }}"
   become: False
@@ -37,43 +39,35 @@
 - name: Unpack archive
   unarchive:
     src: "{{ archive_file }}"
-    dest: "{{ build_base }}"
+    dest: "{{ build_dir }}"
     owner: build-user
+    extra_opts: --strip-components=1 #because the github archives contain one root folder we don't want
 
 - name: Build mumble-web
   become_user: build-user
-  command:
-    cmd: npm install
-    chdir: "{{ build_dir }}"
+  npm:
+    path: "{{ build_dir }}"
+    ci: true
+    production: true
 
-- name: Create deployment parent directory
+- name: Set owner and permissions
   file:
-    path: "{{ deploy_base }}"
-    state: directory
-
-- name: Clean and create deployment directory
-  file:
-    path: "{{ deploy_path }}"
-    state: "{{ item }}"
-  with_items:
-    - absent
-    - directory
-
-- name: Deploy
-  copy:
-    remote_src: true
-    src: "{{ build_dir }}/dist/"
-    dest: "{{ deploy_path }}/"
+    path: "{{ build_dir }}/dist/"
     owner: www-data
     group: www-data
-    mode: 'a=rX,u+w' # All readable, all can list directories but nothing is executable, user can write
+    mode: a=rX,u+w # All readable, all can list directories but nothing is executable, user can write
+    recurse: true
 
-- name: Save deployed version
-  copy:
-    content: "{{ version }}"
-    dest: "{{ deployed_version_file }}"
-
-- name: Delete build directory
+- name: Create deployment base
   file:
-    path: "{{ build_dir }}"
-    state: absent
+    path: "{{ deploy_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 755
+
+- name: Create symlink to deploy
+  file:
+    src: "{{ build_dir }}/dist/"
+    dest: "{{ deploy_path }}"
+    state: link
