@@ -4,9 +4,8 @@
     deploy_path: "{{ (mumble_web.deploy_path | default('/var/www/mumble-web')) | regex_replace('\\/$', '') }}"
     version: "{{ mumble_web.version }}"
     checksum: "{{ mumble_web.checksum }}"
-    reinstall: "{{ mumble_web.reinstall | default(false)}}"
+    reinstall: "{{ mumble_web.reinstall | default(false) }}"
     config: "{{ mumble_web.config | default({}) }}"
-
     archive_file: "{{ global_cache_dir }}/mumble-web-{{ mumble_web.version }}.tar.gz"
     build_dir: /opt/mumble-web-{{ mumble_web.version }}
 
