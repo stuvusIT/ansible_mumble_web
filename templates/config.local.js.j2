@@ -1,0 +1,25 @@
+{% macro js_literal(value) %}
+{% if value is string %}
+'{{value}}'
+{%- elif value is sameas true %}
+true
+{%- elif value is sameas false %}
+false
+{%- else %}
+{{value}}
+{%- endif %}
+{% endmacro -%}
+
+{%- macro print_config(key_prefix, config) %}
+{% for key, value in config.items() %}
+{% if value is mapping %}
+{{ print_config(key + ".", value) }}
+{%- else %}
+config.{{ key_prefix + key }}={{js_literal(value)}}
+{% endif %}
+{%- endfor %}
+{% endmacro -%}
+
+// {{ ansible_managed }}
+let config = window.mumbleWebConfig // eslint-disable-line no-unused-vars
+{{ print_config("", config) }}

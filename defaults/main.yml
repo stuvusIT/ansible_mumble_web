@@ -1,0 +1,4 @@
+---
+mumble_web_deploy_path: /var/www/mumble-web
+mumble_web_reinstall: false
+mumble_web_config: {}

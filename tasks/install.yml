@@ -1,0 +1,77 @@
+---
+- name: Add Apt Key for NodeJS PPA
+  apt_key:
+    id: 1655A0AB68576280
+    keyserver: keyserver.ubuntu.com
+
+- name: Add NodeJS 14 PPA
+  apt_repository:
+    repo: deb https://deb.nodesource.com/node_14.x {{ ansible_distribution_release }} main
+    filename: nodesource
+
+- name: Install npm
+  apt:
+    name:
+      - nodejs
+
+- name: Add build user
+  user:
+    name: build-user
+    system: true
+    comment: Build user to be able to build npm packages as unprivileged user
+
+- name: Download archive
+  get_url:
+    url: https://github.com/Johni0702/mumble-web/archive/{{ version }}.tar.gz
+    dest: "{{ archive_file }}"
+    checksum: "{{ checksum }}"
+  become: False
+  delegate_to: localhost
+
+- name: Clean and create build directory
+  file:
+    path: "{{ build_dir }}"
+    state: "{{ item }}"
+  with_items:
+    - absent
+    - directory
+
+- name: Unpack archive
+  unarchive:
+    src: "{{ archive_file }}"
+    dest: "{{ build_dir }}"
+    owner: build-user
+    extra_opts: --strip-components=1 #because the github archives contain one root folder we don't want
+
+- name: Build mumble-web
+  become_user: build-user
+  npm:
+    path: "{{ build_dir }}"
+    ci: true
+    production: true
+
+- name: Set owner and permissions
+  file:
+    path: "{{ build_dir }}/dist/"
+    owner: www-data
+    group: www-data
+    mode: a=rX,u+w # All readable, all can list directories but nothing is executable, user can write
+    recurse: true
+
+- name: Create deployment base
+  file:
+    path: "{{ deploy_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 755
+
+- name: Create symlink for dist
+  file:
+    src: "{{ build_dir }}/dist/"
+    dest: /tmp/mumble-web-deploy-symlink
+    state: link
+
+# mv is atomic and we want the activation of the new version to be atomic
+- name: Move symlink to deploy location
+  command: mv -Tf /tmp/mumble-web-deploy-symlink {{ deploy_path }}
