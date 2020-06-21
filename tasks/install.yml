@@ -66,8 +66,12 @@
     group: root
     mode: 755
 
-- name: Create symlink to deploy
+- name: Create symlink for dist
   file:
     src: "{{ build_dir }}/dist/"
-    dest: "{{ deploy_path }}"
+    dest: /tmp/mumble-web-deploy-symlink
     state: link
+
+# mv is atomic and we want the activation of the new version to be atomic
+- name: Move symlink to deploy location
+  command: mv -Tf /tmp/mumble-web-deploy-symlink {{ deploy_path }}

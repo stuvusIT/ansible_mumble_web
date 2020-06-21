@@ -1,13 +1,13 @@
 ---
 - name: Calculate facts
   set_fact:
-    deploy_path: "{{ (mumble_web.deploy_path | default('/var/www/mumble-web')) | regex_replace('\\/$', '') }}"
-    version: "{{ mumble_web.version }}"
-    checksum: "{{ mumble_web.checksum }}"
-    reinstall: "{{ mumble_web.reinstall | default(false) }}"
-    config: "{{ mumble_web.config | default({}) }}"
-    archive_file: "{{ global_cache_dir }}/mumble-web-{{ mumble_web.version }}.tar.gz"
-    build_dir: /opt/mumble-web-{{ mumble_web.version }}
+    deploy_path: "{{ mumble_web_deploy_path | regex_replace('\\/$', '') }}"
+    version: "{{ mumble_web_version }}"
+    checksum: "{{ mumble_web_checksum }}"
+    reinstall: "{{ mumble_web_reinstall }}"
+    config: "{{ mumble_web_config }}"
+    archive_file: "{{ global_cache_dir }}/mumble-web-{{ mumble_web_version }}.tar.gz"
+    build_dir: /opt/mumble-web-{{ mumble_web_version }}
 
 - name: Retrieve deployed symlink target
   stat:
